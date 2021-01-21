@@ -11,6 +11,7 @@ def main(argv):
     output = ''
 
     deposits = 0.0
+    payments = 0.0
     debits = {
         'listing_fees' : 0.00,
         'marketing_fees' : 0.00,
@@ -98,6 +99,9 @@ def main(argv):
             elif row[col_type] == 'Deposit':
                 amount = row['Title'].split(' ')[0].replace('$', '')
                 deposits += float(amount)
+            elif row[col_type] == 'Payment':
+                amount = row[col_net].split(' ')[0].replace('$', '')
+                payments += float(amount)
             
             line_count += 1
 
@@ -111,6 +115,7 @@ def main(argv):
 
     output += '\n'
     output += f'\nDeposits to Bank Account: ${deposits}'
+    output += f'\nPayments: ${payments}'
     output += '\n'
     output += '\nDebits'
     output += '\n========================================'
