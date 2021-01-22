@@ -2,33 +2,38 @@
 
 import csv, sys, getopt
 
+order_lines = 0
+statement_lines = 0
+deposits = 0.0
+payments = 0.0
+debits = {
+    'listing_fees' : 0.00,
+    'marketing_fees' : 0.00,
+    'shipping_fees' : 0.00,
+    'transaction_fees' : 0.00,
+    'subscription_fees' : 0.00,
+    'refunds' : 0.00,
+    'processing_fees' : 0.00,
+    'etsy_bank': 0.00
+}
+credits = {
+    'sales_income' : 0.00,
+    'shipping_income' : 0.00,
+    'shipping_cost_credit' : 0.00,
+    'sales_tax_payable' : 0.00
+}
+output = ''
+
 def main(argv):
     orders_file_path = ''
     statement_file_path = ''
+    output_file = 'journal-entry-output.txt'
     home_state = "AZ"
-    order_lines = 0
-    statement_lines = 0
-    output = ''
-
-    deposits = 0.0
-    payments = 0.0
-    debits = {
-        'listing_fees' : 0.00,
-        'marketing_fees' : 0.00,
-        'shipping_fees' : 0.00,
-        'transaction_fees' : 0.00,
-        'subscription_fees' : 0.00,
-        'refunds' : 0.00,
-        'processing_fees' : 0.00,
-        'etsy_bank': 0.00
-    }
-
-    credits = {
-        'sales_income' : 0.00,
-        'shipping_income' : 0.00,
-        'shipping_cost_credit' : 0.00,
-        'sales_tax_payable' : 0.00
-    }
+    global order_lines
+    global statement_lines
+    global output
+    global deposits
+    global payments
 
     try:
         opts, args = getopt.getopt(argv, "s:o:", ["statement=", "orders="])
@@ -44,8 +49,19 @@ def main(argv):
         elif opt in ("-o", "--orders"):
             orders_file_path = arg
 
+    order_lines = process_orders_file(orders_file_path, home_state)
+    output, statement_lines = process_statement_file(statement_file_path)
 
-    with open(orders_file_path, mode='r') as csv_file:
+    print(format_output(output))
+    send_output_to_file(output, output_file)
+    f = open('journal-entry-output.txt', 'w')
+    f.write(output)
+    f.close
+
+
+def process_orders_file(file_path, home_state):
+    with open(file_path, mode='r') as csv_file:
+        order_lines = 0
         col_shipping = "Shipping"
         col_tax = "Sales Tax"
         col_state = "Ship State"
@@ -61,8 +77,14 @@ def main(argv):
 
             credits['shipping_income'] += float(row[col_shipping])
             order_lines += 1
+    return order_lines
 
-    with open(statement_file_path, mode='r') as csv_file:
+def process_statement_file(file_path):
+    with open(file_path, mode='r') as csv_file:
+        output = ""
+        statement_lines = 0
+        global deposits
+        global payments
         col_type = 'Type'
         col_amount = 'Amount'
         col_fees_taxes = 'Fees & Taxes'
@@ -115,6 +137,9 @@ def main(argv):
         # subtract payments to etsy from etsy bank debit
         debits['etsy_bank'] -= payments
 
+    return output, statement_lines
+
+def format_output(output):
     output += '\n'
     output += f'\nTotal Deposits to Bank Account: ${deposits:.2f}'
     output += f'\nTotal Payments to Etsy: ${payments:.2f}'
@@ -137,14 +162,16 @@ def main(argv):
     output += f'\n\tSales Tax Payable: {credits["sales_tax_payable"]:.2f}'
     output += '\n'
     output += '\n'
-    output += f'Processed {order_lines} lines from {orders_file_path}.'
-    output += f'\nProcessed {statement_lines} lines from {statement_file_path}.'
+    output += f'Processed {order_lines} order lines from.'
+    output += f'\nProcessed {statement_lines} statement lines.'
     output += '\n'
+    return output
 
-    print(output)
-    f = open('journal-entry-output.txt', 'w')
+def send_output_to_file(output, output_file):
+    f = open(output_file, 'w')
     f.write(output)
     f.close
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
