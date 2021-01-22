@@ -19,7 +19,8 @@ def main(argv):
         'transaction_fees' : 0.00,
         'subscription_fees' : 0.00,
         'refunds' : 0.00,
-        'processing_fees' : 0.00
+        'processing_fees' : 0.00,
+        'etsy_bank': 0.00
     }
 
     credits = {
@@ -70,12 +71,13 @@ def main(argv):
         refund_processing_fees = 0.00
         csv_reader = csv.DictReader(csv_file)
 
-        for row in csv_reader:
+        output += '\n'
+        output += '\nPayments and Deposits'
+        output += '\n========================================'
 
-            if statement_lines == 0:
-                output += '\n'
-                output += '\nPayments and Deposits'
-                output += '\n========================================'
+        for row in csv_reader:
+            if row[col_net] != '--':
+                debits['etsy_bank'] += float(row[col_net].replace('$', ''))
 
             if row[col_type] == 'Listing':
                 debits['listing_fees'] += float(row[col_net].replace('$', ''))
@@ -110,6 +112,9 @@ def main(argv):
         # sales income is net sales minus processing fees minus shipping and taxes from order
         credits['sales_income'] = gross_sales_income - credits['shipping_income'] - credits['sales_tax_payable']
 
+        # subtract payments to etsy from etsy bank debit
+        debits['etsy_bank'] -= payments
+
     output += '\n'
     output += f'\nTotal Deposits to Bank Account: ${deposits:.2f}'
     output += f'\nTotal Payments to Etsy: ${payments:.2f}'
@@ -123,6 +128,7 @@ def main(argv):
     output += f'\nSubscription Fees: {debits["subscription_fees"]:.2f}'
     output += f'\nRefunds: {debits["refunds"]:.2f}'
     output += f'\nOrder Processing Fees: {debits["processing_fees"]:.2f}'
+    output += f'\nEtsy Bank (Etsy Payable): {debits["etsy_bank"]:.2f}'
     output += '\n'
     output += '\n\tCredits'
     output += '\n\t========================================'
