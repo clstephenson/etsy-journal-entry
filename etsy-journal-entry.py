@@ -33,6 +33,8 @@ headings = {
     'net' : 'Net',
     'title' : 'Title'
 }
+credit_total = 0.00
+debit_total = 0.00
 output = ''
 
 def main(argv):
@@ -45,6 +47,8 @@ def main(argv):
     global output
     global deposits
     global payments
+    global credit_total
+    global debit_total
 
     try:
         opts, args = getopt.getopt(argv, "s:o:", ["statement=", "orders="])
@@ -62,6 +66,9 @@ def main(argv):
 
     order_lines = process_orders_file(orders_file_path, home_state)
     output, statement_lines = process_statement_file(statement_file_path)
+
+    debit_total = sum(value for value in debits.values())
+    credit_total = sum(value for value in credits.values())
 
     print(format_output(output))
     send_output_to_file(output, output_file)
@@ -105,20 +112,20 @@ def process_statement_file(file_path):
                 debits['etsy_bank'] += float(row[headings['net']].replace('$', ''))
 
             if row[headings['type']] == 'Listing':
-                debits['listing_fees'] += float(row[headings['net']].replace('$', ''))
+                debits['listing_fees'] += abs(float(row[headings['net']].replace('$', '')))
             elif row[headings['type']] == 'Marketing':
-                debits['marketing_fees'] += float(row[headings['net']].replace('$', ''))
+                debits['marketing_fees'] += abs(float(row[headings['net']].replace('$', '')))
             elif row[headings['type']] == 'Shipping Label':
-                debits['shipping_fees'] += float(row[headings['net']].replace('$', ''))
+                debits['shipping_fees'] += abs(float(row[headings['net']].replace('$', '')))
             elif row[headings['type']] == 'Transaction':
-                debits['transaction_fees'] += float(row[headings['net']].replace('$', ''))
+                debits['transaction_fees'] += abs(float(row[headings['net']].replace('$', '')))
             elif row[headings['type']] == 'Subscription':
-                debits['subscription_fees'] += float(row[headings['net']].replace('$', ''))
+                debits['subscription_fees'] += abs(float(row[headings['net']].replace('$', '')))
             elif row[headings['type']] == 'Refund':
                 debits['refunds'] += float(row[headings['net']].replace('$', '')) - float(row[headings['fees']].replace('$', ''))
                 refund_processing_fees += float(row[headings['fees']].replace('$', ''))
             elif row[headings['type']] == 'Sale':
-                debits['processing_fees'] += float(row[headings['fees']].replace('$', ''))
+                debits['processing_fees'] += abs(float(row[headings['fees']].replace('$', '')))
                 gross_sales_income += float(row[headings['net']].replace('$', '')) - float(row[headings['fees']].replace('$', ''))
             elif row[headings['type']] == 'Deposit':
                 amount = float(row['Title'].split(' ')[0].replace('$', ''))
@@ -143,6 +150,8 @@ def process_statement_file(file_path):
     return output, statement_lines
 
 def format_output(output):
+    global debit_total
+    global credit_total
     output += '\n'
     output += f'\nTotal Deposits to Bank Account: ${deposits:.2f}'
     output += f'\nTotal Payments to Etsy: ${payments:.2f}'
@@ -157,12 +166,16 @@ def format_output(output):
     output += f'\nRefunds: {debits["refunds"]:.2f}'
     output += f'\nOrder Processing Fees: {debits["processing_fees"]:.2f}'
     output += f'\nEtsy Bank (Etsy Payable): {debits["etsy_bank"]:.2f}'
+    output += '\n-----------------------------------------'
+    output += f'\nTotal Debits = {debit_total:.2f}'
     output += '\n'
     output += '\n\tCredits'
     output += '\n\t========================================'
     output += f'\n\tSales Income: {credits["sales_income"]:.2f}'
     output += f'\n\tShipping Income: {credits["shipping_income"]:.2f}'
     output += f'\n\tSales Tax Payable: {credits["sales_tax_payable"]:.2f}'
+    output += '\n\t-----------------------------------------'
+    output += f'\n\tTotal Credits = {credit_total:.2f}'
     output += '\n'
     output += '\n'
     output += f'Processed {order_lines} order lines from.'
