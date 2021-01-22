@@ -6,8 +6,8 @@ def main(argv):
     orders_file_path = ''
     statement_file_path = ''
     home_state = "AZ"
-    total_shipping_income = 0
-    total_sales_tax = 0
+    order_lines = 0
+    statement_lines = 0
     output = ''
 
     deposits = 0.0
@@ -49,21 +49,17 @@ def main(argv):
         col_tax = "Sales Tax"
         col_state = "Ship State"
         csv_reader = csv.DictReader(csv_file)
-        line_count = 0
 
         for row in csv_reader:
 
-            if line_count == 0:
+            if order_lines == 0:
                 pass
 
             if row[col_state] == home_state:
                 credits['sales_tax_payable'] += float(row[col_tax])
 
             credits['shipping_income'] += float(row[col_shipping])
-            line_count += 1
-
-        output += '\n'
-        output += f'Processed {line_count} lines from {orders_file_path}.'
+            order_lines += 1
 
     with open(statement_file_path, mode='r') as csv_file:
         col_type = 'Type'
@@ -73,12 +69,13 @@ def main(argv):
         gross_sales_income = 0.00
         refund_processing_fees = 0.00
         csv_reader = csv.DictReader(csv_file)
-        line_count = 0
 
         for row in csv_reader:
 
-            if line_count == 0:
-                pass
+            if statement_lines == 0:
+                output += '\n'
+                output += '\nPayments and Deposits'
+                output += '\n========================================'
 
             if row[col_type] == 'Listing':
                 debits['listing_fees'] += float(row[col_net].replace('$', ''))
@@ -97,25 +94,25 @@ def main(argv):
                 debits['processing_fees'] += float(row[col_fees_taxes].replace('$', ''))
                 gross_sales_income += float(row[col_net].replace('$', '')) - float(row[col_fees_taxes].replace('$', ''))
             elif row[col_type] == 'Deposit':
-                amount = row['Title'].split(' ')[0].replace('$', '')
-                deposits += float(amount)
+                amount = float(row['Title'].split(' ')[0].replace('$', ''))
+                output += f'\nDeposit from Etsy: {amount:.2f}'
+                deposits += amount
             elif row[col_type] == 'Payment':
-                amount = row[col_net].split(' ')[0].replace('$', '')
-                payments += float(amount)
+                amount = float(row[col_net].split(' ')[0].replace('$', ''))
+                output += f'\nPayment to Etsy: {amount:.2f}'
+                payments += amount
             
-            line_count += 1
+            statement_lines += 1
 
         # order processing fees is fees from sales plus refund processing fees
         debits['processing_fees'] += refund_processing_fees
         
         # sales income is net sales minus processing fees minus shipping and taxes from order
         credits['sales_income'] = gross_sales_income - credits['shipping_income'] - credits['sales_tax_payable']
-        
-        output += f'\nProcessed {line_count} lines from {statement_file_path}.'
 
     output += '\n'
-    output += f'\nDeposits to Bank Account: ${deposits}'
-    output += f'\nPayments: ${payments}'
+    output += f'\nTotal Deposits to Bank Account: ${deposits:.2f}'
+    output += f'\nTotal Payments to Etsy: ${payments:.2f}'
     output += '\n'
     output += '\nDebits'
     output += '\n========================================'
@@ -132,6 +129,10 @@ def main(argv):
     output += f'\n\tSales Income: {credits["sales_income"]:.2f}'
     output += f'\n\tShipping Income: {credits["shipping_income"]:.2f}'
     output += f'\n\tSales Tax Payable: {credits["sales_tax_payable"]:.2f}'
+    output += '\n'
+    output += '\n'
+    output += f'Processed {order_lines} lines from {orders_file_path}.'
+    output += f'\nProcessed {statement_lines} lines from {statement_file_path}.'
     output += '\n'
 
     print(output)
