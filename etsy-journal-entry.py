@@ -4,6 +4,7 @@ import csv, sys, getopt
 
 order_lines = 0
 statement_lines = 0
+home_state = "AZ"
 deposits = 0.0
 payments = 0.0
 debits = {
@@ -22,13 +23,23 @@ credits = {
     'shipping_cost_credit' : 0.00,
     'sales_tax_payable' : 0.00
 }
+headings = {
+    'shipping' : 'Shipping',
+    'tax' : 'Sales Tax',
+    'state' : 'Ship State',
+    'type' : 'Type',
+    'amount' : 'Amount',
+    'fees' : 'Fees & Taxes',
+    'net' : 'Net',
+    'title' : 'Title'
+}
 output = ''
 
 def main(argv):
     orders_file_path = ''
     statement_file_path = ''
     output_file = 'journal-entry-output.txt'
-    home_state = "AZ"
+    global home_state
     global order_lines
     global statement_lines
     global output
@@ -54,28 +65,23 @@ def main(argv):
 
     print(format_output(output))
     send_output_to_file(output, output_file)
-    f = open('journal-entry-output.txt', 'w')
-    f.write(output)
-    f.close
 
 
 def process_orders_file(file_path, home_state):
     with open(file_path, mode='r') as csv_file:
         order_lines = 0
-        col_shipping = "Shipping"
-        col_tax = "Sales Tax"
-        col_state = "Ship State"
-        csv_reader = csv.DictReader(csv_file)
+        global headings
 
+        csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
 
             if order_lines == 0:
                 pass
 
-            if row[col_state] == home_state:
-                credits['sales_tax_payable'] += float(row[col_tax])
+            if row[headings['state']] == home_state:
+                credits['sales_tax_payable'] += float(row[headings['tax']])
 
-            credits['shipping_income'] += float(row[col_shipping])
+            credits['shipping_income'] += float(row[headings['shipping']])
             order_lines += 1
     return order_lines
 
@@ -85,44 +91,41 @@ def process_statement_file(file_path):
         statement_lines = 0
         global deposits
         global payments
-        col_type = 'Type'
-        col_amount = 'Amount'
-        col_fees_taxes = 'Fees & Taxes'
-        col_net = 'Net'
+        global headings
         gross_sales_income = 0.00
         refund_processing_fees = 0.00
-        csv_reader = csv.DictReader(csv_file)
-
+        
         output += '\n'
         output += '\nPayments and Deposits'
         output += '\n========================================'
 
+        csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
-            if row[col_net] != '--':
-                debits['etsy_bank'] += float(row[col_net].replace('$', ''))
+            if row[headings['net']] != '--':
+                debits['etsy_bank'] += float(row[headings['net']].replace('$', ''))
 
-            if row[col_type] == 'Listing':
-                debits['listing_fees'] += float(row[col_net].replace('$', ''))
-            elif row[col_type] == 'Marketing':
-                debits['marketing_fees'] += float(row[col_net].replace('$', ''))
-            elif row[col_type] == 'Shipping Label':
-                debits['shipping_fees'] += float(row[col_net].replace('$', ''))
-            elif row[col_type] == 'Transaction':
-                debits['transaction_fees'] += float(row[col_net].replace('$', ''))
-            elif row[col_type] == 'Subscription':
-                debits['subscription_fees'] += float(row[col_net].replace('$', ''))
-            elif row[col_type] == 'Refund':
-                debits['refunds'] += float(row[col_net].replace('$', '')) - float(row[col_fees_taxes].replace('$', ''))
-                refund_processing_fees += float(row[col_fees_taxes].replace('$', ''))
-            elif row[col_type] == 'Sale':
-                debits['processing_fees'] += float(row[col_fees_taxes].replace('$', ''))
-                gross_sales_income += float(row[col_net].replace('$', '')) - float(row[col_fees_taxes].replace('$', ''))
-            elif row[col_type] == 'Deposit':
+            if row[headings['type']] == 'Listing':
+                debits['listing_fees'] += float(row[headings['net']].replace('$', ''))
+            elif row[headings['type']] == 'Marketing':
+                debits['marketing_fees'] += float(row[headings['net']].replace('$', ''))
+            elif row[headings['type']] == 'Shipping Label':
+                debits['shipping_fees'] += float(row[headings['net']].replace('$', ''))
+            elif row[headings['type']] == 'Transaction':
+                debits['transaction_fees'] += float(row[headings['net']].replace('$', ''))
+            elif row[headings['type']] == 'Subscription':
+                debits['subscription_fees'] += float(row[headings['net']].replace('$', ''))
+            elif row[headings['type']] == 'Refund':
+                debits['refunds'] += float(row[headings['net']].replace('$', '')) - float(row[headings['fees']].replace('$', ''))
+                refund_processing_fees += float(row[headings['fees']].replace('$', ''))
+            elif row[headings['type']] == 'Sale':
+                debits['processing_fees'] += float(row[headings['fees']].replace('$', ''))
+                gross_sales_income += float(row[headings['net']].replace('$', '')) - float(row[headings['fees']].replace('$', ''))
+            elif row[headings['type']] == 'Deposit':
                 amount = float(row['Title'].split(' ')[0].replace('$', ''))
                 output += f'\nDeposit from Etsy: {amount:.2f}'
                 deposits += amount
-            elif row[col_type] == 'Payment':
-                amount = float(row[col_net].split(' ')[0].replace('$', ''))
+            elif row[headings['type']] == 'Payment':
+                amount = float(row[headings['net']].split(' ')[0].replace('$', ''))
                 output += f'\nPayment to Etsy: {amount:.2f}'
                 payments += amount
             
