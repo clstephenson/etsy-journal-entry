@@ -70,8 +70,9 @@ def main(argv):
     debit_total = sum(value for value in debits.values())
     credit_total = sum(value for value in credits.values())
 
-    print(format_output(output))
-    send_output_to_file(output, output_file)
+    formatted_output = format_output(output)
+    print(formatted_output)
+    send_output_to_file(formatted_output, output_file)
 
 
 def process_orders_file(file_path, home_state):
