@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import csv, sys, getopt
+import csv, sys, getopt, os.path
 
 order_lines = 0
 statement_lines = 0
@@ -52,7 +52,7 @@ def main(argv):
 
     try:
         opts, args = getopt.getopt(argv, "s:o:", ["statement=", "orders="])
-        if len(opts) < 2:
+        if len(opts) < 1:
             print('etsy-journal-entry.py -s <statement-file> -o <orders-file>')
             sys.exit()
     except getopt.GetoptError:
@@ -64,15 +64,23 @@ def main(argv):
         elif opt in ("-o", "--orders"):
             orders_file_path = arg
 
-    order_lines = process_orders_file(orders_file_path, home_state)
-    output, statement_lines = process_statement_file(statement_file_path)
+    if len(orders_file_path) > 0 and os.path.isfile(orders_file_path):
+        order_lines = process_orders_file(orders_file_path, home_state)
+    else:
+        output += '\nAn orders file was not processed!'
 
-    debit_total = sum(value for value in debits.values())
-    credit_total = sum(value for value in credits.values())
+    if len(statement_file_path) > 0 and os.path.isfile(statement_file_path):
+        output, statement_lines = process_statement_file(statement_file_path)
 
-    formatted_output = format_output(output)
-    print(formatted_output)
-    send_output_to_file(formatted_output, output_file)
+        debit_total = sum(value for value in debits.values())
+        credit_total = sum(value for value in credits.values())
+
+        formatted_output = format_output(output)
+        print(formatted_output)
+        send_output_to_file(formatted_output, output_file)
+    else:
+        print(f'\nCould not process the statement file - {statement_file_path}')
+        print('Check that the file exists and is the correct file from Etsy.\n')
 
 
 def process_orders_file(file_path, home_state):
@@ -95,8 +103,8 @@ def process_orders_file(file_path, home_state):
 
 def process_statement_file(file_path):
     with open(file_path, mode='r') as csv_file:
-        output = ""
         statement_lines = 0
+        global output
         global deposits
         global payments
         global headings
