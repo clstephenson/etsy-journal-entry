@@ -2,9 +2,9 @@
 ```
 etsy-journal-entry.py -s <statement-file> -o <orders-file>
 ```
-*statement-file*: monthly statement CSV file downloaded from the Etsy store
+*statement-file* (required): Monthly statement CSV file downloaded from the Etsy store
 
-*orders-file*: monthly orders CSV file downloaded from the Etsy store
+*orders-file* (optional): Monthly orders CSV file downloaded from the Etsy store. Omit this option if there were no orders.
 
 ## output:
 A text file is created in the current working directory containing the debits and credits to be used for the monthly journal entry to account for Etsy income and expenses. The output will also be displayed to stdout if running in a terminal.
