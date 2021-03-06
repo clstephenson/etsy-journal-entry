@@ -120,27 +120,29 @@ def process_statement_file(file_path):
             if row[headings['net']] != '--':
                 debits['etsy_bank'] += float(row[headings['net']].replace('$', ''))
 
-            if row[headings['type']] == 'Listing':
+            transaction_type = row[headings['type']].lower()
+
+            if transaction_type == 'listing':
                 debits['listing_fees'] += abs(float(row[headings['net']].replace('$', '')))
-            elif row[headings['type']] == 'Marketing':
+            elif transaction_type == 'marketing':
                 debits['marketing_fees'] += abs(float(row[headings['net']].replace('$', '')))
-            elif row[headings['type']] == 'Shipping Label':
+            elif transaction_type == 'shipping label':
                 debits['shipping_fees'] += abs(float(row[headings['net']].replace('$', '')))
-            elif row[headings['type']] == 'Transaction':
+            elif transaction_type == 'transaction':
                 debits['transaction_fees'] += abs(float(row[headings['net']].replace('$', '')))
-            elif row[headings['type']] == 'Subscription':
+            elif transaction_type == 'subscription':
                 debits['subscription_fees'] += abs(float(row[headings['net']].replace('$', '')))
-            elif row[headings['type']] == 'Refund':
+            elif transaction_type == 'refund':
                 debits['refunds'] += float(row[headings['net']].replace('$', '')) - float(row[headings['fees']].replace('$', ''))
                 refund_processing_fees += float(row[headings['fees']].replace('$', ''))
-            elif row[headings['type']] == 'Sale':
+            elif transaction_type == 'sale':
                 debits['processing_fees'] += abs(float(row[headings['fees']].replace('$', '')))
                 gross_sales_income += float(row[headings['net']].replace('$', '')) - float(row[headings['fees']].replace('$', ''))
-            elif row[headings['type']] == 'Deposit':
+            elif transaction_type == 'deposit':
                 amount = float(row['Title'].split(' ')[0].replace('$', ''))
                 output += f'\nDeposit from Etsy: {amount:.2f}'
                 deposits += amount
-            elif row[headings['type']] == 'Payment':
+            elif transaction_type == 'payment':
                 amount = float(row[headings['net']].split(' ')[0].replace('$', ''))
                 output += f'\nPayment to Etsy: {amount:.2f}'
                 payments += amount
