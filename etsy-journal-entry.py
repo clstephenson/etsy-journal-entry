@@ -129,11 +129,11 @@ def process_statement_file(file_path):
             elif transaction_type == 'shipping label':
                 debits['shipping_fees'] += abs(float(row[headings['net']].replace('$', '')))
             elif transaction_type == 'transaction':
-                debits['transaction_fees'] += abs(float(row[headings['net']].replace('$', '')))
+                debits['transaction_fees'] += float(row[headings['net']].replace('$', ''))
             elif transaction_type == 'subscription':
                 debits['subscription_fees'] += abs(float(row[headings['net']].replace('$', '')))
             elif transaction_type == 'refund':
-                debits['refunds'] += float(row[headings['net']].replace('$', '')) - float(row[headings['fees']].replace('$', ''))
+                debits['refunds'] += abs(float(row[headings['net']].replace('$', '')) - float(row[headings['fees']].replace('$', '')))
                 refund_processing_fees += float(row[headings['fees']].replace('$', ''))
             elif transaction_type == 'sale':
                 debits['processing_fees'] += abs(float(row[headings['fees']].replace('$', '')))
@@ -150,7 +150,7 @@ def process_statement_file(file_path):
             statement_lines += 1
 
         # order processing fees is fees from sales plus refund processing fees
-        debits['processing_fees'] += refund_processing_fees
+        debits['processing_fees'] -= refund_processing_fees
         
         # sales income is net sales minus processing fees minus shipping and taxes from order
         credits['sales_income'] = gross_sales_income - credits['shipping_income'] - credits['sales_tax_payable']
@@ -172,7 +172,7 @@ def format_output(output):
     output += f'\nListing Fees: {debits["listing_fees"]:.2f}'
     output += f'\nMarketing Fees: {debits["marketing_fees"]:.2f}'
     output += f'\nShipping Fees: {debits["shipping_fees"]:.2f}'
-    output += f'\nTransaction Fees: {debits["transaction_fees"]:.2f}'
+    output += f'\nTransaction Fees: {abs(debits["transaction_fees"]):.2f}'
     output += f'\nSubscription Fees: {debits["subscription_fees"]:.2f}'
     output += f'\nRefunds: {debits["refunds"]:.2f}'
     output += f'\nOrder Processing Fees: {debits["processing_fees"]:.2f}'
